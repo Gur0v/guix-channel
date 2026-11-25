@@ -44,6 +44,13 @@ paths.")
      (list #:import-path "equilotl"
            #:phases
            #~(modify-phases %standard-phases
+               (add-after 'unpack 'disable-self-update
+                 (lambda _
+                   (substitute* "src/equilotl/self_updater.go"
+                     (("if buildinfo.InstallerTag == buildinfo.VersionUnknown [{]")
+                      "if true {\n\t\tSelfUpdateCheckDoneChan <- false"))
+                   (substitute* "src/equilotl/cli.go"
+                     (("\"Update Equilotl\",") ""))))
                (replace 'check
                  (lambda _
                    (invoke "go" "test" "-vet=off" "-tags=cli"
