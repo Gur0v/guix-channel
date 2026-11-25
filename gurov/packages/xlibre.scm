@@ -1,4 +1,5 @@
 (define-module (gurov packages xlibre)
+  #:use-module (gnu packages autotools)
   #:use-module (gnu packages xorg)
   #:use-module (guix build-system meson)
   #:use-module (guix download)
@@ -50,3 +51,33 @@
     (description
      "XLibre is a fork of the Xorg X server.  It accepts requests from X client
 programs and displays their windows on the screen.")))
+
+(define-public xlibre-input-libinput
+  (package
+    (inherit xf86-input-libinput)
+    (name "xlibre-input-libinput")
+    (version "25.0.1")
+    (source
+     (origin
+       (method url-fetch)
+       (uri (string-append "https://github.com/X11Libre/xf86-input-libinput/"
+                           "archive/refs/tags/xlibre-xf86-input-libinput-"
+                           version ".tar.gz"))
+       (sha256
+        (base32 "0i3ar7p83g3ni7rz5zv9ls7frh74lim74fv0bfd4a0wsdxmj9nfp"))))
+    (arguments
+     (list #:configure-flags
+           #~(list (string-append "--with-xorg-module-dir="
+                                  #$output "/lib/xorg/modules/xlibre-25/drivers")
+                   (string-append "--with-sdkdir=" #$output "/include/xorg"))))
+    (native-inputs
+     (modify-inputs (package-native-inputs xf86-input-libinput)
+       (prepend autoconf automake libtool util-macros)))
+    (inputs
+     (modify-inputs (package-inputs xf86-input-libinput)
+       (replace "xorg-server" xlibre-server)
+       (prepend libxfont2)))
+    (home-page "https://github.com/X11Libre/xf86-input-libinput")
+    (synopsis "Libinput input driver for XLibre")
+    (description
+     "This package provides an XLibre input driver based on libinput.")))
