@@ -46,7 +46,6 @@ paths.")
            #~(modify-phases %standard-phases
                (replace 'check
                  (lambda _
-                   ;; Upstream's dynamic log format fails Go vet.
                    (invoke "go" "test" "-vet=off" "-tags=cli"
                            "equilotl/..."))))
            #:build-flags #~(list "-tags=cli"
