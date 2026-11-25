@@ -1,5 +1,6 @@
 #!/bin/sh
 set -eu
+export PATH="@tools@${PATH:+:$PATH}"
 
 config_home=${XDG_CONFIG_HOME:-$HOME/.config}
 mkdir -p "$config_home/discord"
@@ -59,4 +60,5 @@ find "$app" -type f \( -perm /111 -o -name '*.so*' -o -name '*.node' \) -exec sh
     done
 ' sh {} + || exit 1
 export LD_LIBRARY_PATH="@libraries@${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export PATH="@opener-dir@:$PATH"
 exec "$app/Discord" "$@"

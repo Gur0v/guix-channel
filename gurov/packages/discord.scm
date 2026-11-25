@@ -5,6 +5,7 @@
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (nonguix build-system binary)
   #:use-module (gnu packages base)
+  #:use-module (gnu packages bash)
   #:use-module (gnu packages cups)
   #:use-module (gnu packages elf)
   #:use-module (gnu packages fontutils)
@@ -53,6 +54,7 @@
                    (let* ((out (assoc-ref outputs "out"))
                           (dir (string-append out "/lib/discord"))
                           (launcher (string-append out "/bin/discord"))
+                          (opener-dir (string-append dir "/bin"))
                           (libraries
                            (string-append
                             (string-join
@@ -63,7 +65,22 @@
                      (mkdir-p (string-append out "/bin"))
                      (copy-file #$(local-file "discord-launcher.sh") launcher)
                      (chmod launcher #o755)
+                     (mkdir-p opener-dir)
+                     (symlink (string-append #$xdg-utils "/bin/xdg-mime")
+                              (string-append opener-dir "/xdg-mime"))
+                     (call-with-output-file (string-append opener-dir "/xdg-open")
+                       (lambda (port)
+                         (format port "#!/bin/sh~%unset LD_LIBRARY_PATH~%")
+                         (format port "exec ~a/bin/xdg-open \"$@\"~%"
+                                 #$xdg-utils)))
+                     (chmod (string-append opener-dir "/xdg-open") #o755)
+                     (patch-shebang (string-append opener-dir "/xdg-open"))
                      (substitute* launcher
+                       (("@opener-dir@") opener-dir)
+                       (("@tools@")
+                        (string-append #$coreutils "/bin:"
+                                       #$findutils "/bin:"
+                                       #$bash-minimal "/bin"))
                        (("@bootstrap@") (string-append dir "/updater_bootstrap"))
                        (("@patchelf@") (string-append #$patchelf "/bin/patchelf"))
                        (("@jq@") (string-append #$jq "/bin/jq"))
