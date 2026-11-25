@@ -4,8 +4,22 @@
   #:use-module (guix gexp)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (nonguix build-system binary)
+  #:use-module (gnu packages base)
+  #:use-module (gnu packages cups)
+  #:use-module (gnu packages elf)
+  #:use-module (gnu packages fontutils)
+  #:use-module (gnu packages freedesktop)
   #:use-module (gnu packages gcc)
-  #:use-module (gnu packages xorg))
+  #:use-module (gnu packages gl)
+  #:use-module (gnu packages glib)
+  #:use-module (gnu packages gtk)
+  #:use-module (gnu packages linux)
+  #:use-module (gnu packages nss)
+  #:use-module (gnu packages pulseaudio)
+  #:use-module (gnu packages web)
+  #:use-module (gnu packages xdisorg)
+  #:use-module (gnu packages xorg)
+  #:use-module (gnu packages xml))
 
 (define-public discord
   (package
@@ -19,7 +33,10 @@
                (base32 "130ccrq1svj0kxzwfssd27np0qw28gn6qvy82ifb4wbhdv0ki7qj"))))
     (build-system binary-build-system)
     (supported-systems '("x86_64-linux"))
-    (inputs (list (list gcc "lib") libx11 libxcursor libxi libxcb))
+    (inputs (list (list gcc "lib") libx11 libxcursor libxi libxcb
+                  alsa-lib at-spi2-core cairo cups dbus eudev expat glib
+                  gtk+ libxcomposite libxdamage libxext libxfixes libxrandr
+                  libxkbcommon mesa nspr nss pango patchelf pulseaudio))
     (arguments
      (list #:patchelf-plan
            #~'(("updater_bootstrap"
@@ -34,13 +51,26 @@
                (add-after 'install 'install-launcher
                  (lambda* (#:key outputs #:allow-other-keys)
                    (let* ((out (assoc-ref outputs "out"))
-                          (dir (string-append out "/lib/discord")))
-                     (substitute* (string-append dir "/discord")
-                       (("/usr/share/\\$BOOTSTRAP_SUFFIX")
-                        (string-append dir "/updater_bootstrap")))
+                          (dir (string-append out "/lib/discord"))
+                          (launcher (string-append out "/bin/discord"))
+                          (libraries
+                           (string-append
+                            (string-join
+                             (map (lambda (input)
+                                    (string-append (cdr input) "/lib"))
+                                  %build-inputs) ":")
+                            ":" #$nss "/lib/nss")))
                      (mkdir-p (string-append out "/bin"))
-                     (symlink (string-append dir "/discord")
-                              (string-append out "/bin/discord"))
+                     (copy-file #$(local-file "discord-launcher.sh") launcher)
+                     (chmod launcher #o755)
+                     (substitute* launcher
+                       (("@bootstrap@") (string-append dir "/updater_bootstrap"))
+                       (("@patchelf@") (string-append #$patchelf "/bin/patchelf"))
+                       (("@jq@") (string-append #$jq "/bin/jq"))
+                       (("@interpreter@")
+                        (string-append #$glibc "/lib/ld-linux-x86-64.so.2"))
+                       (("@libraries@") libraries))
+                     (patch-shebang launcher)
                      (substitute* (string-append out
                                                  "/share/applications/discord.desktop")
                        (("Exec=/usr/bin/discord")
