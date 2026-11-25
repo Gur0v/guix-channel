@@ -68,7 +68,7 @@ programs and displays their windows on the screen.")))
     (arguments
      (list #:configure-flags
            #~(list (string-append "--with-xorg-module-dir="
-                                  #$output "/lib/xorg/modules/xlibre-25/drivers")
+                                  #$output "/lib/xorg/modules")
                    (string-append "--with-sdkdir=" #$output "/include/xorg"))))
     (native-inputs
      (modify-inputs (package-native-inputs xf86-input-libinput)
