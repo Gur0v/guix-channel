@@ -66,10 +66,17 @@ programs and displays their windows on the screen.")))
        (sha256
         (base32 "0i3ar7p83g3ni7rz5zv9ls7frh74lim74fv0bfd4a0wsdxmj9nfp"))))
     (arguments
-     (list #:configure-flags
-           #~(list (string-append "--with-xorg-module-dir="
-                                  #$output "/lib/xorg/modules")
-                   (string-append "--with-sdkdir=" #$output "/include/xorg"))))
+     (list
+      #:configure-flags
+      #~(list (string-append "--with-xorg-module-dir="
+                             #$output "/lib/xorg/modules")
+              (string-append "--with-sdkdir="
+                             #$output "/include/xorg"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-before 'bootstrap 'fix-autogen-permissions
+            (lambda _
+              (chmod "autogen.sh" #o755))))))
     (native-inputs
      (modify-inputs (package-native-inputs xf86-input-libinput)
        (prepend autoconf automake libtool util-macros)))
